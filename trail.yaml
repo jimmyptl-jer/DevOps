@@ -1,0 +1,15 @@
+Devops:
+- AWS
+- Jenkins
+- Python
+- Ansible
+
+Development:
+- Python
+- Java
+- NodeJS
+- .Net
+
+ansible_facts:
+    python: /usr/bin/python
+    version: 2.7
