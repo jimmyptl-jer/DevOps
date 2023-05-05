@@ -1,0 +1,22 @@
+{
+  "devops":
+  [
+    "AWS",
+    "Jenkins",
+    "Python",
+    "Ansible"
+  ],
+
+  "Development":
+  [
+    "Java",
+    "NodeJS",
+    ".Net"
+  ],
+  
+  "ansible_facts":
+  {
+    "python": "/usr/bin/python"
+  }
+
+}
