@@ -1,3 +1,21 @@
+To add a Jenkins port to your AWS EC2 instance, you need to modify the inbound rules of the associated security group. Here's how you can do it: 
+
+1.	Open the Amazon EC2 console at https://console.aws.amazon.com/ec2/.
+2.	Navigate to the "Instances" section and select the EC2 instance running Jenkins.
+3.	Note the security group associated with your EC2 instance. You can find this information under the "Description" tab of the instance details.
+4.	Go to the "Security Groups" section in the EC2 console.
+5.	Locate the security group identified in step 3 and click on its name to open its details.
+6.	In the "Inbound Rules" tab, click on the "Edit inbound rules" button.
+7.	Click on "Add rule" to create a new inbound rule.
+8.	Configure the rule by selecting the following:
+	•	Type: Custom TCP
+	•	Port Range: Enter the port number used by Jenkins (default is 8080)
+	•	Source: Choose "Custom" and enter the IP range or specific IP address from where you want to allow access to Jenkins. You can specify your local machine's IP address or IP range (e.g., 0.0.0.0/0) for open access, but this is not recommended for security reasons.
+9.	Click on the "Save rules" button to apply the changes.
+After following these steps, the Jenkins port should be accessible from the specified IP address or IP range. Make sure to use the public IP or DNS name of your EC2 instance, along with the Jenkins port, to access the Jenkins server remotely.
+Remember to consider security best practices, such as using secure access methods like VPN or SSH tunneling, and implementing authentication and access controls within Jenkins to protect your server from unauthorized access.
+
+
 # Jenkins Install 
 
 #!/bin/bash
