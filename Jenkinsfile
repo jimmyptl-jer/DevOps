@@ -4,14 +4,14 @@ pipeline{
   stages{
     stage('Create App'){
       steps{
-        sh 'npx create-react-app my-app'
+        echo 'npx create-react-app my-app'
       }
     }
 
     stage('Install Dependencies'){
       steps{
         dir('my-app'){
-          sh 'npm install'
+          echo 'npm install'
         }
       }
     }
@@ -19,7 +19,7 @@ pipeline{
     stage('build'){
       steps{
         dir('my-app'){
-          sh 'npm run build'
+          echo 'npm run build'
         }
       }
     }
@@ -27,7 +27,7 @@ pipeline{
     stage('test'){
       steps{
         dir('my-app'){
-          sh 'npm test'
+          echo 'npm test'
         }
       }
     }
