@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookstore-client-deployment
+
+spec: 
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: bookstore-client
+  
+  template:
+    metadata:
+      labels:                     # Add the labels key here to match the selector above
+        app: bookstore-client
+    spec:                          # Add the spec key to define the Pod specification
+      containers:                  # Correct the containers key spelling
+        - name: book-api
+          image: jerry4699/bookstore-client
+          ports:
+            - containerPort: 80    # Corrected indentation and placement for ports

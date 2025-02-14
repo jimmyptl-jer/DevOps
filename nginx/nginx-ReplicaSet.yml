@@ -1,0 +1,56 @@
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-replicaset
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+
+
+### Comments
+
+# 1. **apiVersion**: Specifies the API version and group for Kubernetes resources. Here, `apps/v1` is used, which is appropriate for a ReplicaSet.
+   
+# 2. **kind**: Defines the type of Kubernetes resource. In this case, it's a `ReplicaSet`.
+
+# 3. **metadata**: Provides metadata about the ReplicaSet, including its name.
+
+#   - **name**: The unique name of this ReplicaSet within its namespace, which helps identify it.
+
+# 4. **spec**: Defines the desired state of the ReplicaSet.
+
+#   - **replicas**: Specifies the number of desired Pod replicas. The ReplicaSet will ensure exactly this many replicas of the Pod are running.
+   
+#   - **selector**: Defines the label selector used to manage Pods. The ReplicaSet will match any Pod with the specified label(s) and maintain the specified number of replicas.
+   
+#     - **matchLabels**: Key-value pairs for labels. The ReplicaSet will look for any Pod with the label `app: nginx` and manage it as part of the ReplicaSet.
+   
+#   - **template**: Describes the Pod template used to create each replica. 
+   
+#     - **metadata.labels**: Labels applied to each Pod created by this ReplicaSet. These labels should match the selector's labels to ensure the ReplicaSet manages these Pods.
+   
+#     - **spec.containers**: Specifies the containers to be run in each Pod.
+   
+#       - **name**: Name of the container.
+       
+#       - **image**: Specifies the container image to use for this Pod. Here, it uses the `nginx:latest` image from Docker Hub.
+       
+#       - **ports**: Defines the ports exposed by the container.
+         
+#         - **containerPort**: The specific port exposed by the container for application traffic; in this case, port 80.
+
