@@ -1,8 +1,9 @@
+# Provider configuration for AWS
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-1"  # Set the AWS region for resources
 }
 
-# Fetch the latest Ubuntu AMI dynamically
+# Fetch the latest Ubuntu AMI dynamically based on filters
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -16,10 +17,10 @@ data "aws_ami" "ubuntu" {
     values = ["hvm"]
   }
 
-  owners = ["099720109477"] # Canonical
+  owners = ["099720109477"] # Canonical (owner ID)
 }
 
-# Fetch the latest Amazon Linux 2 AMI dynamically
+# Fetch the latest Amazon Linux 2 AMI dynamically based on filters
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -50,24 +51,26 @@ data "aws_vpc" "default" {
   default = true
 }
 
-# Fetch the default subnets (public subnets)
+# Fetch the default public subnets in the VPC
 data "aws_subnet_ids" "default_public_subnets" {
   vpc_id = data.aws_vpc.default.id
 }
 
-# Security Group for allowing SSH and HTTP traffic
+# Security Group for EC2 instances (SSH, HTTP, HTTPS)
 resource "aws_security_group" "web_sg" {
   name        = "web-server-sg"
   description = "Allow SSH, HTTPS and HTTP traffic"
   vpc_id      = data.aws_vpc.default.id
 
+  # SSH ingress rule (port 22)
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Change for better security
+    cidr_blocks = ["0.0.0.0/0"]  # Change for better security
   }
 
+  # HTTP ingress rule (port 80)
   ingress {
     from_port   = 80
     to_port     = 80
@@ -75,13 +78,15 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-ingress {
+  # HTTPS ingress rule (port 443)
+  ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Egress rule (allow all outbound traffic)
   egress {
     from_port   = 0
     to_port     = 0
@@ -94,12 +99,46 @@ ingress {
   }
 }
 
-# Use an existing Key Pair (instead of generating one)
-resource "aws_key_pair" "deployer" {
-  key_name   = "web-server-key"
-  public_key = file("server.pem")  # Ensure this is the corresponding public key
+# Security Group for the Application Load Balancer (ALB) (SSH, HTTP, HTTPS)
+resource "aws_security_group" "alb_sg" {
+  name        = "alb-sg"
+  description = "Allow SSH, HTTPS and HTTP traffic"
+  vpc_id      = data.aws_vpc.default.id
+
+  # HTTP ingress rule (port 80)
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS ingress rule (port 443)
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Egress rule (allow all outbound traffic)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "alb-sg"
+  }
 }
 
+# Use an existing Key Pair for EC2 instances (instead of generating one)
+resource "aws_key_pair" "deployer" {
+  key_name   = "web-server-key"
+  public_key = file("server.pem")  # Ensure the corresponding public key exists
+}
 
 # Create the Ubuntu EC2 instance
 resource "aws_instance" "web_ubuntu" {
@@ -108,6 +147,7 @@ resource "aws_instance" "web_ubuntu" {
   key_name               = "web-server-key"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
+  # User data script for Ubuntu instance
   user_data = file("userdata_ubuntu.sh")
   tags = {
     Name = "ubuntu-web-server"
@@ -121,70 +161,30 @@ resource "aws_instance" "web_linux" {
   key_name               = "web-server-key"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
+  # User data script for Amazon Linux instance
   user_data = file("userdata_linux.sh")
-
   tags = {
     Name = "amazon-linux-web-server"
   }
 }
 
-# Variable for instance type
+# Variable for EC2 instance type
 variable "instance_type" {
   description = "Instance type for EC2 instances"
-  default     = "t3.micro"
+  default     = "t3.micro"  # Modify this as needed
 }
 
-# Output Public IPs
+# Output the public IP of the Ubuntu instance
 output "ubuntu_public_ip" {
   value = aws_instance.web_ubuntu.public_ip
 }
 
+# Output the public IP of the Amazon Linux instance
 output "amazon_linux_public_ip" {
   value = aws_instance.web_linux.public_ip
 }
 
-
-
-# Application Load Balancer
-# Security Group for the Load Balancer
-# Security Group for allowing SSH and HTTP traffic
-resource "aws_security_group" "alb_sg" {
-  name        = "alb-sg"
-  description = "Allow SSH, HTTPS and HTTP traffic"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Change for better security
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "alb-sg"
-  }
-}
+# Application Load Balancer (ALB) configuration
 
 # Create the Target Group for the ALB
 resource "aws_lb_target_group" "web_target_group" {
@@ -193,6 +193,7 @@ resource "aws_lb_target_group" "web_target_group" {
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.default.id
 
+  # Health check configuration for the target group
   health_check {
     path                = "/"
     interval            = 30
@@ -206,7 +207,7 @@ resource "aws_lb_target_group" "web_target_group" {
   }
 }
 
-# Register EC2 Instances with the Target Group
+# Register EC2 instances (both Ubuntu and Amazon Linux) with the Target Group
 resource "aws_lb_target_group_attachment" "web_attachment_ubuntu" {
   target_group_arn = aws_lb_target_group.web_target_group.arn
   target_id        = aws_instance.web_ubuntu.id
@@ -219,13 +220,13 @@ resource "aws_lb_target_group_attachment" "web_attachment_linux" {
   port             = 80
 }
 
-# Create the ALB
+# Create the Application Load Balancer (ALB)
 resource "aws_lb" "web_alb" {
   name               = "web-alb"
-  internal           = false
+  internal           = false  # Make it external
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = data.aws_subnet_ids.default_public_subnets.ids  # Use default subnets
+  subnets            = data.aws_subnet_ids.default_public_subnets.ids  # Use default public subnets
   enable_deletion_protection = false
 
   enable_cross_zone_load_balancing = true
@@ -235,12 +236,13 @@ resource "aws_lb" "web_alb" {
   }
 }
 
-# Create ALB Listener
+# Create the listener for the ALB (HTTP)
 resource "aws_lb_listener" "web_listener" {
   load_balancer_arn = aws_lb.web_alb.arn
   port              = "80"
   protocol          = "HTTP"
 
+  # Default action for the listener (return a fixed response)
   default_action {
     type             = "fixed-response"
     fixed_response {
@@ -251,7 +253,7 @@ resource "aws_lb_listener" "web_listener" {
   }
 }
 
-# Output ALB DNS Name
+# Output the DNS name of the ALB
 output "alb_dns_name" {
   value = aws_lb.web_alb.dns_name
 }
