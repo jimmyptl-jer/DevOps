@@ -1,3 +1,8 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Fetch the latest Ubuntu AMI dynamically
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -40,24 +45,96 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# Security Group for allowing SSH and HTTP traffic
+resource "aws_security_group" "web_sg" {
+  name        = "web-server-sg"
+  description = "Allow SSH and HTTP traffic"
+  vpc_id      = aws_vpc.main.id
 
-resource "aws_instance" "web-ubuntu" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Change for better security
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = {
-    Name = "ubuntu-webServer"
+    Name = "web-server-sg"
   }
 }
 
+# Use an existing Key Pair (instead of generating one)
+resource "aws_key_pair" "deployer" {
+  key_name   = "web-server-key"
+  public_key = file("server.pem")  # Ensure this is the corresponding public key
+}
 
-# Create the EC2 instance
-resource "aws_instance" "web-linux" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t3.micro"
 
+# Create the Ubuntu EC2 instance
+resource "aws_instance" "web_ubuntu" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = "web-server-key"
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              apt update -y
+              apt install -y apache2
+              systemctl enable apache2
+              systemctl start apache2
+              EOF
 
   tags = {
-    Name = "web-server-linux"
+    Name = "ubuntu-web-server"
   }
+}
+
+# Create the Amazon Linux EC2 instance
+resource "aws_instance" "web_linux" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  key_name               = "web-server-key"
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y httpd
+              systemctl enable httpd
+              systemctl start httpd
+              EOF
+
+  tags = {
+    Name = "amazon-linux-web-server"
+  }
+}
+
+# Variable for instance type
+variable "instance_type" {
+  description = "Instance type for EC2 instances"
+  default     = "t3.micro"
+}
+
+# Output Public IPs
+output "ubuntu_public_ip" {
+  value = aws_instance.web_ubuntu.public_ip
+}
+
+output "amazon_linux_public_ip" {
+  value = aws_instance.web_linux.public_ip
 }
