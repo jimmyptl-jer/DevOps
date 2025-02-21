@@ -121,7 +121,7 @@ resource "aws_instance" "web_linux" {
   key_name               = "web-server-key"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  user_data = file("userdata.sh")
+  user_data = file("userdata_linux.sh")
 
   tags = {
     Name = "amazon-linux-web-server"
