@@ -108,14 +108,7 @@ resource "aws_instance" "web_ubuntu" {
   key_name               = "web-server-key"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              apt update -y
-              apt install -y apache2
-              systemctl enable apache2
-              systemctl start apache2
-              EOF
-
+  user_data = file("userdata.sh")
   tags = {
     Name = "ubuntu-web-server"
   }
@@ -128,13 +121,7 @@ resource "aws_instance" "web_linux" {
   key_name               = "web-server-key"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y httpd
-              systemctl enable httpd
-              systemctl start httpd
-              EOF
+  user_data = file("userdata.sh")
 
   tags = {
     Name = "amazon-linux-web-server"
