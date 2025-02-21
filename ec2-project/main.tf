@@ -48,7 +48,7 @@ data "aws_ami" "amazon_linux" {
 # Security Group for allowing SSH and HTTP traffic
 resource "aws_security_group" "web_sg" {
   name        = "web-server-sg"
-  description = "Allow SSH and HTTP traffic"
+  description = "Allow SSH, HTTPS and HTTP traffic"
   vpc_id      = aws_vpc.main.id
 
   ingress {
